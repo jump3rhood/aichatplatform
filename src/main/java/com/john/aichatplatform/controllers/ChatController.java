@@ -16,6 +16,7 @@ public class    ChatController {
 
     private final ChatService chatService;
     private final ConversationIdGenerator idGenerator;
+
     public ChatController(ChatService chatService, ConversationIdGenerator idGenerator){
         this.chatService = chatService;
         this.idGenerator = idGenerator;
