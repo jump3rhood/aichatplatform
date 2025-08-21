@@ -4,11 +4,14 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -17,7 +20,12 @@ public class ChatService {
     private final ChatClient simpleChatClient;
     private final ChatClient memoryChatClient;
     private final ChatMemory chatMemory;
-    public ChatService(OpenAiChatModel openAiChatModel, ChatMemory chatMemory, Map<String, String> systemPrompts) {
+    private final VectorStore vectorStore;
+    private final DocumentService documentService;
+
+    public ChatService(OpenAiChatModel openAiChatModel, ChatMemory chatMemory, Map<String, String> systemPrompts, VectorStore vectorStore, DocumentService documentService) {
+        this.vectorStore = vectorStore;
+        this.documentService = documentService;
         System.out.println("OpenAI Model: " + openAiChatModel.getClass().getName());
         System.out.println("Model Options: " + openAiChatModel.getDefaultOptions());
         this.systemPrompts = systemPrompts;
@@ -56,6 +64,25 @@ public class ChatService {
     // Clear conversation
     public void deleteConversation(String conversationId){
         chatMemory.clear(conversationId);
+    }
+    // RAG chat method
+    public String ragChat(String message, String documentId){
+        List<Document> relevantChunks = documentService.searchSimilarContent(message, documentId, 3);
+        if(relevantChunks.isEmpty()){
+            return "I couldn't find relevant information in the document to answer your question";
+        }
+
+        //Build context from retrieved chunks
+        String context = relevantChunks.stream()
+                .map(Document::getFormattedContent)
+                .collect(Collectors.joining("\n\n"));
+
+        String ragPrompt = String.format(systemPrompts.get("rag"), context, message);
+
+        return simpleChatClient.prompt()
+                .user(ragPrompt)
+                .call()
+                .content();
     }
 
 }

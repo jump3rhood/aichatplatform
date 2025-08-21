@@ -55,4 +55,25 @@ public class    ChatController {
         chatService.deleteConversation(conversationId);
         return new ResponseEntity<>(HttpStatusCode.valueOf(200));
     }
+    @PostMapping("/pdf")
+    public ResponseEntity<Map<String, Object>> ragChat(@RequestBody Map<String, String> request) {
+        String message = request.get("message");
+        String documentId = request.get("documentId");
+
+        if (message == null || message.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Message is required"));
+        }
+
+        if (documentId == null || documentId.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Document ID is required"));
+        }
+
+        String response = chatService.ragChat(message, documentId);
+
+        return ResponseEntity.ok(Map.of(
+                "response", response,
+                "documentId", documentId,
+                "type", "rag"
+        ));
+    }
 }

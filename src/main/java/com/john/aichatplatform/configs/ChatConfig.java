@@ -32,7 +32,16 @@ public class ChatConfig {
             You are an AI assistant helping users understand documents.
             Use the provided document context to answer questions accurately.
             """);
-
+        prompts.put("rag", """
+                Based on the following context from the document, please answer the user's question.
+                
+                            Context:
+                            %s
+                
+                            Question: %s
+                
+                            If the answer cannot be found in the context, please say so.
+                """);
         return prompts;
     }
 
